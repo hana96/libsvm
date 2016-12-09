@@ -54,10 +54,16 @@ class svm_train {
 	private void do_cross_validation()
 	{
 		int i;
-		int total_correct = 0;
+		//int total_correct = 0;
 		double total_error = 0;
 		double sumv = 0, sumy = 0, sumvv = 0, sumyy = 0, sumvy = 0;
 		double[] target = new double[prob.l];
+
+		//**To caluculate precision/recall for each class**//
+		int tp = 0;
+		int fp = 0;
+		int tn = 0;
+		int fn = 0;
 
 		svm.svm_cross_validation(prob,param,nr_fold,target);
 		if(param.svm_type == svm_parameter.EPSILON_SVR ||
@@ -82,13 +88,57 @@ class svm_train {
 		}
 		else
 		{
+			/*
 			for(i=0;i<prob.l;i++)
 				if(target[i] == prob.y[i])
 					++total_correct;
 			System.out.print("Cross Validation Accuracy = "+100.0*total_correct/prob.l+"%\n");
+			*/
+
+			for(i=0;i<prob.l; i++) {
+				//System.out.println("prob.y["+i+"] : "+prob.y[i]+" target["+i+"] : "+target[i]);
+				if(prob.y[i] == 1) { // True label = +1
+					if(target[i] == prob.y[i]) {
+						tp++;
+					} else {
+						fn++;
+					}
+				} else{ // True label = -1
+					if (target[i] == prob.y[i]) {
+						tn++;
+					} else {
+						fp++;
+					}
+				}
+			}
+
+			System.out.println("");
+			System.out.println("*");
+			System.out.println("Cross Validation Accuracy = "+ 100*((double)(tp + tn) / (double)(tp + fp + tn + fn)));
+
+			//Precision and recall
+			double pos_prec   = ((double)tp/(double)(tp + fp));
+			double pos_rec    = ((double)tp/(double)(tp + fn));
+			double pos_f1     = (2 * pos_prec * pos_rec) / (pos_prec + pos_rec);
+
+			double neg_prec = ((double)tn/(double)(tn + fn));
+			double neg_rec    = ((double)tn/(double)(tn + fp));
+			double neg_f1     = (2 * neg_prec * neg_rec) / (neg_prec + neg_rec);
+
+			System.out.println("tp:"+tp+" fp:"+fp+" tn:"+tn+" fn:"+fn);
+			System.out.println("Positive (+1) class:");
+			System.out.println("precision = "+ pos_prec);
+			System.out.println("recall = " + pos_rec);
+			System.out.println("F1 value = " + pos_f1);
+
+			System.out.println("*");
+			System.out.println("Negative (-1) class:");
+			System.out.println("precision = " + neg_prec);
+			System.out.println("recall = " + neg_rec);
+			System.out.println("F1 value = " + neg_f1);
 		}
 	}
-	
+
 	private void run(String argv[]) throws IOException
 	{
 		parse_command_line(argv);

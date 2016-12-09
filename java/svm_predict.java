@@ -18,7 +18,7 @@ class svm_predict {
 
 	private static svm_print_interface svm_print_string = svm_print_stdout;
 
-	static void info(String s) 
+	static void info(String s)
 	{
 		svm_print_string.print(s);
 	}
@@ -43,6 +43,12 @@ class svm_predict {
 		int svm_type=svm.svm_get_svm_type(model);
 		int nr_class=svm.svm_get_nr_class(model);
 		double[] prob_estimates=null;
+
+		//**To caluculate precision/recall for each class**//
+		int tp = 0;
+		int fp = 0;
+		int tn = 0;
+		int fn = 0;
 
 		if(predict_probability == 1)
 		{
@@ -94,8 +100,23 @@ class svm_predict {
 				output.writeBytes(v+"\n");
 			}
 
-			if(v == target)
-				++correct;
+			/*if(v == target)
+				++correct;*/
+			if(v == 1){
+					if(v == target){
+						tp++;
+						++correct;
+					}else{
+						fn++;
+					}
+			}else{
+				if(v == target){
+					tn++;
+					++correct;
+				}else{
+					fp++;
+				}
+			}
 			error += (v-target)*(v-target);
 			sumv += v;
 			sumy += target;
@@ -103,6 +124,7 @@ class svm_predict {
 			sumyy += target*target;
 			sumvy += v*target;
 			++total;
+			//System.out.println("v:"+v+" target:"+target);
 		}
 		if(svm_type == svm_parameter.EPSILON_SVR ||
 		   svm_type == svm_parameter.NU_SVR)
@@ -116,6 +138,27 @@ class svm_predict {
 		else
 			svm_predict.info("Accuracy = "+(double)correct/total*100+
 				 "% ("+correct+"/"+total+") (classification)\n");
+
+				 //Precision and recall
+				 double pos_prec   = ((double)tp/(double)(tp + fp));
+				 double pos_rec    = ((double)tp/(double)(tp + fn));
+				 double pos_f1     = (2 * pos_prec * pos_rec) / (pos_prec + pos_rec);
+
+				 double neg_prec = ((double)tn/(double)(tn + fn));
+				 double neg_rec    = ((double)tn/(double)(tn + fp));
+				 double neg_f1     = (2 * neg_prec * neg_rec) / (neg_prec + neg_rec);
+				 
+				 System.out.println("tp:"+tp+" fp:"+fp+" tn:"+tn+" fn:"+fn);
+				 System.out.println("Positive (+1) class:");
+				 System.out.println("precision = "+ pos_prec);
+				 System.out.println("recall = " + pos_rec);
+				 System.out.println("F1 value = " + pos_f1);
+
+				 System.out.println("*");
+				 System.out.println("Negative (-1) class:");
+				 System.out.println("precision = " + neg_prec);
+				 System.out.println("recall = " + neg_rec);
+				 System.out.println("F1 value = " + neg_f1);
 	}
 
 	private static void exit_with_help()
@@ -153,7 +196,7 @@ class svm_predict {
 		}
 		if(i>=argv.length-2)
 			exit_with_help();
-		try 
+		try
 		{
 			BufferedReader input = new BufferedReader(new FileReader(argv[i]));
 			DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(argv[i+2])));
@@ -181,12 +224,12 @@ class svm_predict {
 			predict(input,output,model,predict_probability);
 			input.close();
 			output.close();
-		} 
-		catch(FileNotFoundException e) 
+		}
+		catch(FileNotFoundException e)
 		{
 			exit_with_help();
 		}
-		catch(ArrayIndexOutOfBoundsException e) 
+		catch(ArrayIndexOutOfBoundsException e)
 		{
 			exit_with_help();
 		}
